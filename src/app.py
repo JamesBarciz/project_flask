@@ -1,7 +1,12 @@
+import os
+
+import tweepy
 from flask import Flask, request, render_template
 from sqlalchemy.exc import IntegrityError
+import spacy
 
 from src.orm_model import DB, Author
+from src.twitter import upsert_user
 
 
 def create_app():
@@ -15,13 +20,14 @@ def create_app():
 
     @app.route('/add_author')
     def add_author():
-        id = request.args['id']
-        name = request.args['name']
-        new_author = Author(id=id, name=name)
+        author_handle = request.args['author_handle']
+        twitter_auth = tweepy.OAuthHandler(os.environ['TWITTER_API_KEY'], os.environ['TWITTER_API_KEY_SECRET'])
+        twitter_api = tweepy.API(twitter_auth)
+        spacy_path = 'src/my_model'
+        spacy_model = spacy.load(spacy_path)
+        upsert_user(author_handle=author_handle, twitter_api=twitter_api, spacy_model=spacy_model)
         try:
-            DB.session.add(new_author)
-            DB.session.commit()
-            return ', '.join([k.name for k in Author.query.all()])
+            return render_template('landing.html', authors=Author.query.order_by(Author.id))
         except IntegrityError as e:
             return f'Id is already in database.<br>{str(e)}'
 
