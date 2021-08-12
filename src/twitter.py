@@ -1,11 +1,12 @@
 from functools import partial
+from typing import NoReturn
 
 import numpy as np
 
-from orm_model import DB, Author, Tweet
+from src.orm_model import DB, Author, Tweet
 
 
-def upsert_user(author_handle, twitter_api, spacy_model):
+def upsert_user(author_handle: str, twitter_api, spacy_model) -> NoReturn:
     """Allows us to UPdate or inSERT a Twitter author"""
     twitter_author = twitter_api.get_user(author_handle)
 

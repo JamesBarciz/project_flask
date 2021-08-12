@@ -1,15 +1,17 @@
 import os
 
-import tweepy
+import flask
 from flask import Flask, request, render_template
-from sqlalchemy.exc import IntegrityError
 import spacy
+from sqlalchemy.exc import IntegrityError
+import tweepy
 
 from src.orm_model import DB, Author
 from src.twitter import upsert_user
+from src.twitter_assist import upsert_author_assist
 
 
-def create_app():
+def create_app() -> flask.app.Flask:
     app = Flask(__name__)
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data/twitter_db.sqlite3'
     DB.init_app(app)
@@ -31,6 +33,17 @@ def create_app():
         except IntegrityError as e:
             return f'Id is already in database.<br>{str(e)}'
 
+    @app.route('/add_author_assist')
+    def add_author_assist():
+        author_handle = request.args['author_handle']
+        spacy_path = 'src/my_model'
+        spacy_model = spacy.load(spacy_path)
+        upsert_author_assist(author_handle=author_handle, spacy_model=spacy_model)
+        try:
+            return render_template('landing.html', authors=Author.query.order_by(Author.id))
+        except IntegrityError as e:
+            return f'Id is already in database.<br>{str(e)}'
+
     @app.route('/classify_post')
     def classify_post():
         most_likely_author = request.args['post_text'][-5:]
@@ -46,4 +59,5 @@ def create_app():
 
 
 if __name__ == '__main__':
+    # create_app().run(host='0.0.0.0')
     create_app().run()
