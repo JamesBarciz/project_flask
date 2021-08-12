@@ -9,6 +9,7 @@ import tweepy
 from src.orm_model import DB, Author
 from src.twitter import upsert_user
 from src.twitter_assist import upsert_author_assist
+from src.predict import get_most_likely_author
 
 
 def create_app() -> flask.app.Flask:
@@ -46,8 +47,11 @@ def create_app() -> flask.app.Flask:
 
     @app.route('/classify_post')
     def classify_post():
-        most_likely_author = request.args['post_text'][-5:]
-        return most_likely_author
+        tweet_text = request.args['tweet_text']
+        spacy_path = 'src/my_model'
+        spacy_model = spacy.load(spacy_path)
+        most_likely_author = get_most_likely_author(tweet_body=tweet_text, spacy_model=spacy_model)
+        return most_likely_author[0]
 
     @app.route('/reset')
     def reset_db():
